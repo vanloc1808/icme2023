@@ -101,6 +101,8 @@ def build_grit_model(config):
     text_field = TextField(vocab_path=config.vocab_path if 'vocab_path' in config else config.dataset.vocab_path)
     return model, transform, text_field
 
+grit_model, transform, text_field =  build_grit_model(GRIT_CONFIG)
+
 def get_grit_cap(model, transform, text_field, config, img_path):
     rgb_image = Image.open(img_path).convert('RGB')
     image = transform(rgb_image)
@@ -132,7 +134,7 @@ def get_grit_cap(model, transform, text_field, config, img_path):
 context_dict = {}
 
 # Word Embeddings
-text_field, word_embeddings, vocab_size = get_text_metadata()
+# text_field, word_embeddings, vocab_size = get_text_metadata()
 
 # Models (create model according to text embedding)
 if embed_type == 'use':
@@ -211,10 +213,7 @@ def evaluate_context_with_bbox_overlap(v_data):
             v_data (dict): A dictionary holding metadata about on one data sample
 
         Returns:
-            context_label (int): Returns 0 if its same/similar context and 1 if out-of-context
     """
-    # get_grit_config()
-    grit_model, transform, text_field =  build_grit_model(GRIT_CONFIG)
     img_path = os.path.join(DATA_DIR, v_data['img_local_path'])
     grit_cap = get_grit_cap(grit_model, transform, text_field, GRIT_CONFIG, img_path)
 
