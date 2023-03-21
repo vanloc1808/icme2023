@@ -245,8 +245,8 @@ def evaluate_context_with_bbox_overlap(v_data):
     bbox_overlap = is_bbox_overlap(top_bbox_c1, top_bbox_c2, iou_overlap_threshold)
     
     embeddings_img_cap_grit = contextual_model.encode(grit_cap, convert_to_tensor=True)
-    if (grit_cap != caption_test_dict_grit[v_data['img_local_path'].split('/')[-1]]):
-        import ipdb; ipdb.set_trace()
+    # if (grit_cap != caption_test_dict_grit[v_data['img_local_path'].split('/')[-1]]):
+    #     import ipdb; ipdb.set_trace()
     # embeddings_img_cap_clip_pref = contextual_model.encode(caption_test_dict_clip_pref[v_data['img_local_path'].split('/')[-1]], convert_to_tensor=True)
     # embeddings_img_cap_ofa = contextual_model.encode(caption_test_dict_ofa[v_data['img_local_path'].split('/')[-1]], convert_to_tensor=True)
     # embeddings_img_cap_vit = contextual_model.encode(caption_test_dict_vit[v_data['img_local_path'].split('/')[-1]], convert_to_tensor=True)
