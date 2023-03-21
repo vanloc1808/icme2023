@@ -5,13 +5,15 @@ from torch import nn
 import tensorflow_hub as hub
 import torchvision.transforms as transforms
 import tensorflow as tf
+import os
 gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
   tf.config.experimental.set_memory_growth(gpu, True)
 # Data Directories
-BASE_DIR = '/mnt/d/data/COSMOS/COSMOS/'
-DATA_DIR = '/mnt/d/data/COSMOS/amc/'
-TARGET_DIR = "/mnt/d/data/COSMOS/amc/"
+
+BASE_DIR = '/content/icme2023/'
+DATA_DIR = os.environ['DATA_DIR'] 
+TARGET_DIR = "/content/icme2023/"
 
 # Word Embeddings
 embedding_length = 300
