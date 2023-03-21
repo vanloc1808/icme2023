@@ -45,18 +45,14 @@ debert_tokenizer = DebertaTokenizer.from_pretrained("microsoft/deberta-xlarge-mn
 contextual_model = SentenceTransformer('sentence-transformers/stsb-bert-base')
 
 grit_vocab="./grit/data/vocab.json"
-grit_checkpoint="/mnt/d/data/COSMOS/COSMOS/grit/grit_checkpoint_4ds.pth"
+grit_checkpoint="./grit/grit_checkpoint_4ds.pth"
 GRIT_CONFIG = OmegaConf.load("./grit/configs/caption/coco_config.yaml")
 
 initialize(config_path="./grit/configs/caption/", job_name="grit")
 GRIT_CONFIG = compose(config_name="coco_config")
 GRIT_CONFIG['exp']['checkpoint'] = grit_checkpoint
 GRIT_CONFIG.dataset['vocab_path'] = grit_vocab
-# @hydra.main(config_path="./grit/configs/caption", config_name="coco_config")
-# def get_grit_config(config: DictConfig):
-#     import ipdb; ipdb.set_trace()
-#     config['exp']['checkpoint'] = grit_checkpoint
-#     config.dataset['vocab_path'] = grit_vocab
+
 
 def build_grit_model(config):
     device = torch.device(f"cuda:0")
@@ -124,14 +120,14 @@ def get_grit_cap(model, transform, text_field, config, img_path):
         caption = text_field.decode(out, join_words=True)[0]
         return caption
 
-with open("/mnt/d/data/COSMOS/COSMOS/grit/caption_grit_acm_new.json") as json_file:
-    caption_test_dict_grit = json.load(json_file)
-with open("/mnt/d/data/COSMOS/COSMOS/caption_ofa.json") as json_file:
-    caption_test_dict_ofa = json.load(json_file)
-with open("/mnt/d/data/COSMOS/COSMOS/caption_CLIP_prefix.json") as json_file:
-    caption_test_dict_clip_pref = json.load(json_file)
-with open("/mnt/d/data/COSMOS/COSMOS/caption_ViTCAP.json") as json_file:
-    caption_test_dict_vit = json.load(json_file)
+# with open("/mnt/d/data/COSMOS/COSMOS/grit/caption_grit_acm_new.json") as json_file:
+#     caption_test_dict_grit = json.load(json_file)
+# with open("/mnt/d/data/COSMOS/COSMOS/caption_ofa.json") as json_file:
+#     caption_test_dict_ofa = json.load(json_file)
+# with open("/mnt/d/data/COSMOS/COSMOS/caption_CLIP_prefix.json") as json_file:
+#     caption_test_dict_clip_pref = json.load(json_file)
+# with open("/mnt/d/data/COSMOS/COSMOS/caption_ViTCAP.json") as json_file:
+#     caption_test_dict_vit = json.load(json_file)
 
 context_dict = {}
 
