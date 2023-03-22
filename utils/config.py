@@ -12,7 +12,7 @@ for gpu in gpus:
 # Data Directories
 
 BASE_DIR = '/content/icme2023/'
-DATA_DIR = os.environ['DATA_DIR'] 
+DATA_DIR = os.environ['INPUT_FOLDER'] 
 TARGET_DIR = "/content/icme2023/"
 
 # Word Embeddings
