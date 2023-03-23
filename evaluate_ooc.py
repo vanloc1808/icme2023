@@ -242,8 +242,6 @@ def evaluate_context_with_bbox_overlap(v_data):
     permission = {'type': 'anyone', 'role': 'writer'}
     drive_service.permissions().create(
         fileId=file_id, body=permission).execute()
-    img_open = cv2.imread(img_path)
-    # print(img_open.shape)
     data = SearchByImageService.get_instance().search(
         'https://drive.google.com/uc?id='+str(file_id),
         # img_path,
@@ -261,19 +259,10 @@ def evaluate_context_with_bbox_overlap(v_data):
 
     process_embedding1 = v_data['caption1']
     process_embedding2 = v_data['caption2']
-    # for entity in v_data['caption1_entities']:
-    #     process_embedding1 = process_embedding1.replace(entity[0], '')
-    # for entity in v_data['caption2_entities']:
-    #     process_embedding2 = process_embedding2.replace(entity[0], '')
 
-    # debert_sentence_1 = "[CLS] "+ process_embedding1 + ". [SEP] " + process_embedding2 + ". [SEP]"
-    # debert_sentence_2 = "[CLS] "+ process_embedding2 + ". [SEP] " + process_embedding1 + ". [SEP]"
     debert_sentence_1 = process_embedding1 + process_embedding2
     debert_sentence_2 = process_embedding2 + process_embedding1
 
-        # with torch.no_grad():
-        # nli_score_1 = debert_model(**inputs_1).logits.softmax(1)
-        # nli_score_2 = debert_model(**inputs_2).logits.softmax(1)
     nli_score_1 = debert_model(debert_sentence_1)[0]['label']
     nli_score_2 = debert_model(debert_sentence_2)[0]['label']
 
@@ -282,11 +271,6 @@ def evaluate_context_with_bbox_overlap(v_data):
     bbox_overlap = is_bbox_overlap(top_bbox_c1, top_bbox_c2, iou_overlap_threshold)
     
     embeddings_img_cap_grit = contextual_model.encode(grit_cap, convert_to_tensor=True)
-    # if (grit_cap != caption_test_dict_grit[v_data['img_local_path'].split('/')[-1]]):
-    #     import ipdb; ipdb.set_trace()
-    # embeddings_img_cap_clip_pref = contextual_model.encode(caption_test_dict_clip_pref[v_data['img_local_path'].split('/')[-1]], convert_to_tensor=True)
-    # embeddings_img_cap_ofa = contextual_model.encode(caption_test_dict_ofa[v_data['img_local_path'].split('/')[-1]], convert_to_tensor=True)
-    # embeddings_img_cap_vit = contextual_model.encode(caption_test_dict_vit[v_data['img_local_path'].split('/')[-1]], convert_to_tensor=True)
     
     embeddings1 = contextual_model.encode(process_embedding1, convert_to_tensor=True)
     embeddings2 = contextual_model.encode(process_embedding2, convert_to_tensor=True)
@@ -295,9 +279,6 @@ def evaluate_context_with_bbox_overlap(v_data):
     cosine_scores2_grit = util.cos_sim(embeddings2, embeddings_img_cap_grit)
     emds_sim = util.cos_sim(embeddings1, embeddings2)
     
-    # textual_sim = emds_sim
-    #85.76
-    #85.8.2
     IC_NER_GRIT = ((cosine_scores1_grit > 0.5 and len(v_data['caption1_entities']) < 1) \
                 or (cosine_scores2_grit > 0.5 and len(v_data['caption2_entities']) < 1))
     
