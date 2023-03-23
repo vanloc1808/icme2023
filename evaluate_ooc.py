@@ -2,6 +2,7 @@
 
 import cv2
 import os
+import io
 from utils.config import *
 from utils.text_utils import get_text_metadata
 from model_archs.models import CombinedModelMaskRCNN
@@ -40,6 +41,12 @@ from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 import json
 
+from search_engine import SearchByImageService
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseUpload
+drive_service = build('drive', 'v3')
+
 debert_model = pipeline("text-classification", model="microsoft/deberta-xlarge-mnli", device="cuda:0")
 debert_tokenizer = DebertaTokenizer.from_pretrained("microsoft/deberta-xlarge-mnli")
 contextual_model = SentenceTransformer('sentence-transformers/stsb-bert-base')
@@ -53,6 +60,18 @@ GRIT_CONFIG = compose(config_name="coco_config")
 GRIT_CONFIG['exp']['checkpoint'] = grit_checkpoint
 GRIT_CONFIG.dataset['vocab_path'] = grit_vocab
 
+famou_pages =["https://www.bbc.com", "https://nytimes.com", "https://arabnews.com", "https://reuters.com", "https://www.sabcnews.com", "https://pbs.org",\
+    "https://www.nbclosangeles.com", "https://apnews.com", "https://news.sky.com", "https://www.telegraph.co.uk",\
+    "https://time.com", "https://www.denverpost.com", "https://www.washingtonpost.com", "https://www.cbc.ca",\
+    "https://www.theguardian.com/", "https://www.pressherald.com", "https://www.independent.co.uk", "https://gazette.com"]
+
+def check_famous(queries):
+    hostPageUrls = [query["link"] for query in queries]
+    for page_url in famou_pages:
+        for host in hostPageUrls:
+            if page_url in host:
+                return True
+    return False
 
 def build_grit_model(config):
     device = torch.device(f"cuda:0")
@@ -215,6 +234,25 @@ def evaluate_context_with_bbox_overlap(v_data):
         Returns:
     """
     img_path = os.path.join(DATA_DIR, v_data['img_local_path'])
+    file_name = img_path
+    file_metadata = {'name': file_name}
+    media = MediaIoBaseUpload(io.BytesIO(open(file_name, 'rb').read()), mimetype='image/jpeg')
+    file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+    file_id = file.get('id')
+    permission = {'type': 'anyone', 'role': 'writer'}
+    drive_service.permissions().create(
+        fileId=file_id, body=permission).execute()
+    img_open = cv2.imread(img_path)
+    # print(img_open.shape)
+    data = SearchByImageService.get_instance().search(
+        'https://drive.google.com/uc?id='+str(file_id),
+        # img_path,
+        limit_page=5
+    )
+    print("data :", data)
+    drive_service.files().delete(fileId=file_id).execute()
+    in_famous = check_famous(data)
+    
     grit_cap = get_grit_cap(grit_model, transform, text_field, GRIT_CONFIG, img_path)
 
     bboxes = v_data['maskrcnn_bboxes']
@@ -255,16 +293,6 @@ def evaluate_context_with_bbox_overlap(v_data):
     
     cosine_scores1_grit = util.cos_sim(embeddings1, embeddings_img_cap_grit)
     cosine_scores2_grit = util.cos_sim(embeddings2, embeddings_img_cap_grit)
-
-    # cosine_scores1_clip_pref  = util.cos_sim(embeddings1, embeddings_img_cap_clip_pref)
-    # cosine_scores2_clip_pref  = util.cos_sim(embeddings2, embeddings_img_cap_clip_pref)
-
-    # cosine_scores1_ofa = util.cos_sim(embeddings1, embeddings_img_cap_ofa)
-    # cosine_scores2_ofa = util.cos_sim(embeddings2, embeddings_img_cap_ofa)
-
-    # cosine_scores1_vit = util.cos_sim(embeddings1, embeddings_img_cap_vit)
-    # cosine_scores2_vit = util.cos_sim(embeddings2, embeddings_img_cap_vit)
-    
     emds_sim = util.cos_sim(embeddings1, embeddings2)
     
     # textual_sim = emds_sim
@@ -273,15 +301,6 @@ def evaluate_context_with_bbox_overlap(v_data):
     IC_NER_GRIT = ((cosine_scores1_grit > 0.5 and len(v_data['caption1_entities']) < 1) \
                 or (cosine_scores2_grit > 0.5 and len(v_data['caption2_entities']) < 1))
     
-    # IC_NER_OFA = ((cosine_scores1_ofa > 0.5 and len(v_data['caption1_entities']) < 1) \
-    #         or (cosine_scores2_ofa > 0.5 and len(v_data['caption2_entities']) < 1))
-
-    # IC_NER_VIT = ((cosine_scores1_vit > 0.5 and len(v_data['caption1_entities']) < 1) \
-    #         or (cosine_scores2_vit > 0.5 and len(v_data['caption2_entities']) < 1))
-    
-    # IC_NER_CLIP_PREF = ((cosine_scores1_clip_pref > 0.5 and len(v_data['caption1_entities']) < 1) \
-    #         or (cosine_scores2_clip_pref > 0.5 and len(v_data['caption2_entities']) < 1))
-
     in_our = 0
     in_them = 0
     if nli_score_1 == "ENTAILMENT" or nli_score_2 == "ENTAILMENT":
@@ -296,7 +315,7 @@ def evaluate_context_with_bbox_overlap(v_data):
     con1 = (nli_score_1 == "ENTAILMENT" and nli_score_2 != "CONTRADICTION")
     con2 = (nli_score_2 == "ENTAILMENT" and nli_score_1 != "CONTRADICTION")
 
-    if nli_score_1 == "CONTRADICTION" and nli_score_2 == "CONTRADICTION" and textual_sim >= 0.25:
+    if nli_score_1 == "CONTRADICTION" and nli_score_2 == "CONTRADICTION" and textual_sim >= 0.25 and not in_famous:
     # if nli_score_1 == "CONTRADICTION" and nli_score_2 == "CONTRADICTION":
         context = 1
         cosmos_context = 1
