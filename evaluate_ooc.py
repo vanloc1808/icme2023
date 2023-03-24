@@ -206,22 +206,22 @@ def evaluate_context_with_bbox_overlap(v_data):
         Returns:
     """
     img_path = os.path.join(DATA_DIR, v_data['img_local_path'])
-    file_name = img_path
-    file_metadata = {'name': file_name}
-    media = MediaIoBaseUpload(io.BytesIO(open(file_name, 'rb').read()), mimetype='image/jpeg')
-    file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-    file_id = file.get('id')
-    permission = {'type': 'anyone', 'role': 'writer'}
-    drive_service.permissions().create(
-        fileId=file_id, body=permission).execute()
-    data = SearchByImageService.get_instance().search(
-        'https://drive.google.com/uc?id='+str(file_id),
-        # img_path,
-        limit_page=5
-    )
-    print("data :", data)
-    drive_service.files().delete(fileId=file_id).execute()
-    in_famous = check_famous(data)
+#     file_name = img_path
+#     file_metadata = {'name': file_name}
+#     media = MediaIoBaseUpload(io.BytesIO(open(file_name, 'rb').read()), mimetype='image/jpeg')
+#     file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+#     file_id = file.get('id')
+#     permission = {'type': 'anyone', 'role': 'writer'}
+#     drive_service.permissions().create(
+#         fileId=file_id, body=permission).execute()
+#     data = SearchByImageService.get_instance().search(
+#         'https://drive.google.com/uc?id='+str(file_id),
+#         # img_path,
+#         limit_page=5
+#     )
+#     print("data :", data)
+#     drive_service.files().delete(fileId=file_id).execute()
+#     in_famous = check_famous(data)
     
     grit_cap = get_grit_cap(grit_model, transform, text_field, GRIT_CONFIG, img_path)
 
