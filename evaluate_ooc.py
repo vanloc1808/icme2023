@@ -41,12 +41,6 @@ from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 import json
 
-from search_engine import SearchByImageService
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseUpload
-drive_service = build('drive', 'v3')
-
 debert_model = pipeline("text-classification", model="microsoft/deberta-xlarge-mnli", device="cuda:0")
 debert_tokenizer = DebertaTokenizer.from_pretrained("microsoft/deberta-xlarge-mnli")
 contextual_model = SentenceTransformer('sentence-transformers/stsb-bert-base')
@@ -59,19 +53,6 @@ initialize(config_path="./grit/configs/caption/", job_name="grit")
 GRIT_CONFIG = compose(config_name="coco_config")
 GRIT_CONFIG['exp']['checkpoint'] = grit_checkpoint
 GRIT_CONFIG.dataset['vocab_path'] = grit_vocab
-
-famou_pages =["https://www.bbc.com", "https://nytimes.com", "https://arabnews.com", "https://reuters.com", "https://www.sabcnews.com", "https://pbs.org",\
-    "https://www.nbclosangeles.com", "https://apnews.com", "https://news.sky.com", "https://www.telegraph.co.uk",\
-    "https://time.com", "https://www.denverpost.com", "https://www.washingtonpost.com", "https://www.cbc.ca",\
-    "https://www.theguardian.com/", "https://www.pressherald.com", "https://www.independent.co.uk", "https://gazette.com"]
-
-def check_famous(queries):
-    hostPageUrls = [query["link"] for query in queries]
-    for page_url in famou_pages:
-        for host in hostPageUrls:
-            if page_url in host:
-                return True
-    return False
 
 def build_grit_model(config):
     device = torch.device(f"cuda:0")
@@ -140,16 +121,7 @@ def get_grit_cap(model, transform, text_field, config, img_path):
                     )
         caption = text_field.decode(out, join_words=True)[0]
         return caption
-
-# with open("/mnt/d/data/COSMOS/COSMOS/grit/caption_grit_acm_new.json") as json_file:
-#     caption_test_dict_grit = json.load(json_file)
-# with open("/mnt/d/data/COSMOS/COSMOS/caption_ofa.json") as json_file:
-#     caption_test_dict_ofa = json.load(json_file)
-# with open("/mnt/d/data/COSMOS/COSMOS/caption_CLIP_prefix.json") as json_file:
-#     caption_test_dict_clip_pref = json.load(json_file)
-# with open("/mnt/d/data/COSMOS/COSMOS/caption_ViTCAP.json") as json_file:
-#     caption_test_dict_vit = json.load(json_file)
-
+ 
 context_dict = {}
 
 # Word Embeddings
@@ -284,26 +256,14 @@ def evaluate_context_with_bbox_overlap(v_data):
     
     in_our = 0
     in_them = 0
-    if nli_score_1 == "ENTAILMENT" or nli_score_2 == "ENTAILMENT":
-        if nli_score_2 != "CONTRADICTION" and nli_score_1 != "CONTRADICTION":
-            in_them = 1
-    if (nli_score_1 == "ENTAILMENT" and nli_score_2 != "CONTRADICTION") or\
-        (nli_score_2 == "ENTAILMENT" and nli_score_1 != "CONTRADICTION"):
-            in_our = 1
-    if in_them != in_our:
-        import ipdb; ipdb.set_trace()
-        open("exist.txt")
+
     con1 = (nli_score_1 == "ENTAILMENT" and nli_score_2 != "CONTRADICTION")
     con2 = (nli_score_2 == "ENTAILMENT" and nli_score_1 != "CONTRADICTION")
 
-    if nli_score_1 == "CONTRADICTION" and nli_score_2 == "CONTRADICTION" and textual_sim >= 0.25 and not in_famous:
-    # if nli_score_1 == "CONTRADICTION" and nli_score_2 == "CONTRADICTION":
+    if nli_score_1 == "CONTRADICTION" and nli_score_2 == "CONTRADICTION" and textual_sim >= 0.25:
         context = 1
         cosmos_context = 1
     elif con1 or con2:
-    # elif nli_score_1 == "ENTAILMENT" or nli_score_2 == "ENTAILMENT":
-    #     if nli_score_2 != "CONTRADICTION" and nli_score_1 != "CONTRADICTION":
-    # #         in_them = True
             context = 0
             cosmos_context=0
     elif bbox_overlap:
@@ -327,30 +287,9 @@ def evaluate_context_with_bbox_overlap(v_data):
                 context = 0
             else:
                 context = 1
-            # return context
     else:
         # Check for captions with same context : Different grounding (Not out of context)
         return 0, 0
-        # if nli_score_1.argmax() == nli_score_2.argmax() == 0 and textual_sim >= 0.5:
-        # context = 1
-    
-    # if nli_score_1 == "CONTRADICTION" and nli_score_2 == "CONTRADICTION" and textual_sim >=0.25:
-    #     context = 1
-    #     cosmos_context = 1
-    # elif con1 or con2:
-    # # elif nli_score_1 == "ENTAILMENT" or nli_score_2 == "ENTAILMENT":
-    # #     if nli_score_2 != "CONTRADICTION" and nli_score_1 != "CONTRADICTION":
-    # # #         in_them = True
-    #         context = 0
-    #         cosmos_context=0
-    # # elif bbox_overlap:
-    # if emds_sim < 0.5:
-    #     if IC_NER_GRIT:
-    #         context =  cosmos_context = 0
-    #     else:
-    #         context =cosmos_context = 1
-    # else:
-    #     context = cosmos_context = 0
     return  context, cosmos_context
 
 
@@ -375,6 +314,4 @@ if __name__ == "__main__":
         if language_context == actual_context:
             lang_correct += 1
 
-    print("Cosmos Accuracy", cosmos_correct / len(test_samples))
-    print("Our Accuracy", ours_correct / len(test_samples))
-    print("Language Baseline Accuracy", lang_correct / len(test_samples))
+    print("Accuracy", cosmos_correct / len(test_samples))
