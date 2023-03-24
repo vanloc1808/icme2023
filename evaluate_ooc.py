@@ -296,7 +296,7 @@ def evaluate_context_with_bbox_overlap(v_data):
 if __name__ == "__main__":
     """ Main function to compute out-of-context detection accuracy"""
 
-    test_samples = read_json_data(os.path.join(DATA_DIR, 'annotations', 'test_data.json'))
+    test_samples = read_json_data(os.path.join(DATA_DIR, 'test.json'))
     cosmos_correct = 0
     ours_correct = 0
     lang_correct = 0
