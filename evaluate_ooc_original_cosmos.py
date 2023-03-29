@@ -3,6 +3,9 @@
 import cv2
 import os
 import io
+import sys
+current_directory = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_directory + "/grit/")
 from utils.config import *
 from utils.text_utils import get_text_metadata
 from model_archs.models import CombinedModelMaskRCNN
@@ -45,11 +48,11 @@ debert_model = pipeline("text-classification", model="microsoft/deberta-xlarge-m
 debert_tokenizer = DebertaTokenizer.from_pretrained("microsoft/deberta-xlarge-mnli")
 contextual_model = SentenceTransformer('sentence-transformers/stsb-bert-base')
 
-grit_vocab="./grit/data/vocab.json"
-grit_checkpoint="./grit/grit_checkpoint_4ds.pth"
-GRIT_CONFIG = OmegaConf.load("./grit/configs/caption/coco_config.yaml")
+grit_vocab=current_directory+"/grit/data/vocab.json"
+grit_checkpoint=current_directory+"/grit/grit_checkpoint_4ds.pth"
+GRIT_CONFIG = OmegaConf.load(current_directory+"/grit/configs/caption/coco_config.yaml")
 
-initialize(config_path="./grit/configs/caption/", job_name="grit")
+initialize(config_path=current_directory+"/grit/configs/caption/", job_name="grit")
 GRIT_CONFIG = compose(config_name="coco_config")
 GRIT_CONFIG['exp']['checkpoint'] = grit_checkpoint
 GRIT_CONFIG.dataset['vocab_path'] = grit_vocab
