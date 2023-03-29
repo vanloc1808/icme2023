@@ -3,6 +3,9 @@
 import cv2
 import os
 import io
+import sys
+current_directory = os.getcwd()
+sys.path.append(current_directory + "/grit")
 from utils.config import *
 from utils.text_utils import get_text_metadata
 from model_archs.models import CombinedModelMaskRCNN
