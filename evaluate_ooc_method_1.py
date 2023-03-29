@@ -52,7 +52,7 @@ grit_vocab=current_directory+"/grit/data/vocab.json"
 grit_checkpoint=current_directory+"/grit/grit_checkpoint_4ds.pth"
 GRIT_CONFIG = OmegaConf.load(current_directory+"/grit/configs/caption/coco_config.yaml")
 
-initialize(config_path=current_directory+"/grit/configs/caption/", job_name="grit")
+initialize(config_path="./grit/configs/caption/", job_name="grit")
 GRIT_CONFIG = compose(config_name="coco_config")
 GRIT_CONFIG['exp']['checkpoint'] = grit_checkpoint
 GRIT_CONFIG.dataset['vocab_path'] = grit_vocab
