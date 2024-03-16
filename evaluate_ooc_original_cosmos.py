@@ -209,76 +209,28 @@ def evaluate_context_with_bbox_overlap(v_data):
         Returns:
     """
     img_path = os.path.join(DATA_DIR, v_data['img_local_path'])
-#     file_name = img_path
-#     file_metadata = {'name': file_name}
-#     media = MediaIoBaseUpload(io.BytesIO(open(file_name, 'rb').read()), mimetype='image/jpeg')
-#     file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-#     file_id = file.get('id')
-#     permission = {'type': 'anyone', 'role': 'writer'}
-#     drive_service.permissions().create(
-#         fileId=file_id, body=permission).execute()
-#     data = SearchByImageService.get_instance().search(
-#         'https://drive.google.com/uc?id='+str(file_id),
-#         # img_path,
-#         limit_page=5
-#     )
-#     print("data :", data)
-#     drive_service.files().delete(fileId=file_id).execute()
-#     in_famous = check_famous(data)
-    
-    grit_cap = get_grit_cap(grit_model, transform, text_field, GRIT_CONFIG, img_path)
 
     bboxes = v_data['maskrcnn_bboxes']
     score_c1, score_c2 = get_scores(v_data)
     textual_sim = float(v_data['bert_base_score'])
 
-    process_embedding1 = v_data['caption1']
-    process_embedding2 = v_data['caption2']
-
-    debert_sentence_1 = process_embedding1 + process_embedding2
-    debert_sentence_2 = process_embedding2 + process_embedding1
-
-    nli_score_1 = debert_model(debert_sentence_1)[0]['label']
-    nli_score_2 = debert_model(debert_sentence_2)[0]['label']
-
     top_bbox_c1 = top_bbox_from_scores(bboxes, score_c1)
     top_bbox_c2 = top_bbox_from_scores(bboxes, score_c2)
+    
+    iou_overlap_threshold = 0.5
     bbox_overlap = is_bbox_overlap(top_bbox_c1, top_bbox_c2, iou_overlap_threshold)
-    
-    embeddings_img_cap_grit = contextual_model.encode(grit_cap, convert_to_tensor=True)
-    
-    embeddings1 = contextual_model.encode(process_embedding1, convert_to_tensor=True)
-    embeddings2 = contextual_model.encode(process_embedding2, convert_to_tensor=True)
-    
-    cosine_scores1_grit = util.cos_sim(embeddings1, embeddings_img_cap_grit)
-    cosine_scores2_grit = util.cos_sim(embeddings2, embeddings_img_cap_grit)
-    emds_sim = util.cos_sim(embeddings1, embeddings2)
-    
-    IC_NER_GRIT = ((cosine_scores1_grit > 0.5 and len(v_data['caption1_entities']) < 1) \
-                or (cosine_scores2_grit > 0.5 and len(v_data['caption2_entities']) < 1))
-    
-    in_our = 0
-    in_them = 0
 
     if bbox_overlap:
-
-    # if bbox_overlap:
         # Check for captions with same context : Same grounding with high textual overlap (Not out of context)
         if textual_sim >= 0.5:
             cosmos_context = 0
         # Check for captions with different context : Same grounding with low textual overlap (Out of context)
         else:
                 cosmos_context = 1
-        
-        if emds_sim >= textual_sim_threshold:
-            context = 0
-        # Check for captions with different context : Same grounding with low textual overlap (Out of context)
-        else:
-                context = 1
     else:
         # Check for captions with same context : Different grounding (Not out of context)
         return 0, 0
-    return  context, cosmos_context
+    return  cosmos_context
 
 
 if __name__ == "__main__":
@@ -286,19 +238,16 @@ if __name__ == "__main__":
 
     test_samples = read_json_data(os.path.join(DATA_DIR, 'test.json'))
     cosmos_correct = 0
-    ours_correct = 0
     lang_correct = 0
     total_time = 0
     for i, v_data in tqdm(enumerate(test_samples)):
         actual_context = int(v_data['context_label'])
         language_context = 0 if float(v_data['bert_base_score']) >= textual_sim_threshold else 1
         start = time.time()
-        pred_context_ours, pred_context_cosmos = evaluate_context_with_bbox_overlap(v_data)
+        pred_context_cosmos = evaluate_context_with_bbox_overlap(v_data)
         end = time.time()
         total_time += end -start
 
-        if pred_context_ours == actual_context:
-            ours_correct += 1
         if pred_context_cosmos == actual_context:
             cosmos_correct += 1
 
