@@ -223,13 +223,13 @@ def evaluate_context_with_bbox_overlap(v_data):
     if bbox_overlap:
         # Check for captions with same context : Same grounding with high textual overlap (Not out of context)
         if textual_sim >= 0.5:
-            return = 0
+            return  0
         # Check for captions with different context : Same grounding with low textual overlap (Out of context)
         else:
-            return = 1
+            return 1
     else:
         # Check for captions with same context : Different grounding (Not out of context)
-        return = 0
+        return 0
 
 
 if __name__ == "__main__":
