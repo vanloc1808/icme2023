@@ -288,11 +288,14 @@ if __name__ == "__main__":
     cosmos_correct = 0
     ours_correct = 0
     lang_correct = 0
-
+    total_time = 0
     for i, v_data in tqdm(enumerate(test_samples)):
         actual_context = int(v_data['context_label'])
         language_context = 0 if float(v_data['bert_base_score']) >= textual_sim_threshold else 1
+        start = time.time()
         pred_context_ours, pred_context_cosmos = evaluate_context_with_bbox_overlap(v_data)
+        end = time.time()
+        total_time += end -start
 
         if pred_context_ours == actual_context:
             ours_correct += 1
@@ -301,5 +304,6 @@ if __name__ == "__main__":
 
         if language_context == actual_context:
             lang_correct += 1
-
+    avg_time = total_time/len(test_samples)
     print("Accuracy", cosmos_correct / len(test_samples))
+    print("Average inference time", avg_time)
