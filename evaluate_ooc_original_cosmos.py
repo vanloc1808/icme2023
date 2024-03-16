@@ -207,29 +207,28 @@ def evaluate_context_with_bbox_overlap(v_data):
             v_data (dict): A dictionary holding metadata about on one data sample
 
         Returns:
+            context_label (int): Returns 0 if its same/similar context and 1 if out-of-context
     """
-    img_path = os.path.join(DATA_DIR, v_data['img_local_path'])
-
     bboxes = v_data['maskrcnn_bboxes']
     score_c1, score_c2 = get_scores(v_data)
     textual_sim = float(v_data['bert_base_score'])
 
     top_bbox_c1 = top_bbox_from_scores(bboxes, score_c1)
     top_bbox_c2 = top_bbox_from_scores(bboxes, score_c2)
-    
     iou_overlap_threshold = 0.5
     bbox_overlap = is_bbox_overlap(top_bbox_c1, top_bbox_c2, iou_overlap_threshold)
-
     if bbox_overlap:
         # Check for captions with same context : Same grounding with high textual overlap (Not out of context)
-        if textual_sim >= 0.5:
-            return  0
+        if textual_sim >= textual_sim_threshold:
+            context = 0
         # Check for captions with different context : Same grounding with low textual overlap (Out of context)
         else:
-            return 1
+            context = 1
+        return context
     else:
         # Check for captions with same context : Different grounding (Not out of context)
         return 0
+
 
 
 if __name__ == "__main__":
