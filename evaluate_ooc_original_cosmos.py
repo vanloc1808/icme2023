@@ -225,10 +225,10 @@ def evaluate_context_with_bbox_overlap(v_data):
         # Check for captions with different context : Same grounding with low textual overlap (Out of context)
         else:
             context = 1
-        return context
+        return context, bbox_overlap, textual_sim
     else:
         # Check for captions with same context : Different grounding (Not out of context)
-        return 0
+        return 0, bbox_overlap, textual_sim
 
 
 
@@ -239,11 +239,22 @@ if __name__ == "__main__":
     cosmos_correct = 0
     lang_correct = 0
     total_time = 0
+    with open("filtered_data_cosmos_hybrid.json") as file:
+        false_predictions = json.load(file)
+    false_predictions_data = []
     for i, v_data in tqdm(enumerate(test_samples)):
+        if (
+            v_data["img_local_path"].replace("test/", "") not in (
+                false_predictions.keys()
+            )
+        ):
+            continue
         actual_context = int(v_data["context_label"])
         language_context = 0 if float(v_data["bert_base_score"]) >= textual_sim_threshold else 1
         start = time.time()
-        pred_context_cosmos = evaluate_context_with_bbox_overlap(v_data)
+        pred_context_cosmos, bbox_overlap, textual_sim = (
+            evaluate_context_with_bbox_overlap(v_data)
+        )
         end = time.time()
         total_time += end -start
 
@@ -258,6 +269,17 @@ if __name__ == "__main__":
                 "pred_context_cosmos": pred_context_cosmos,
                 },
             )
+            false_predictions_data.append(
+                {
+                    "img_path": v_data["img_local_path"],
+                    "caption1": v_data["caption1"],
+                    "caption2": v_data["caption2"],
+                    "actual_context": actual_context,
+                    "pred_context_cosmos": pred_context_cosmos,
+                    "bbox_overlap": bbox_overlap,
+                    "textual_sim": textual_sim,
+                }
+            )
 
         if language_context == actual_context:
             lang_correct += 1
@@ -267,3 +289,5 @@ if __name__ == "__main__":
     print("Writing file false_predictions.json")
     with open("false_predictions.json", "w") as f:
         json.dump(false_results, f)
+    with open("false_predictions_analyzer.json", "w") as f:
+        json.dump(false_predictions_data, f)
