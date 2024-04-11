@@ -228,7 +228,8 @@ def evaluate_context_with_bbox_overlap(v_data):
         return context, bbox_overlap, textual_sim
     else:
         # Check for captions with same context : Different grounding (Not out of context)
-        return 0, bbox_overlap, textual_sim
+        # return 0, bbox_overlap, textual_sim
+        return 1, bbox_overlap, textual_sim
 
 
 
@@ -243,12 +244,12 @@ if __name__ == "__main__":
         false_predictions = json.load(file)
     false_predictions_data = []
     for i, v_data in tqdm(enumerate(test_samples)):
-        if (
-            v_data["img_local_path"].replace("test/", "") not in (
-                false_predictions.keys()
-            )
-        ):
-            continue
+        # if (
+        #     v_data["img_local_path"].replace("test/", "") not in (
+        #         false_predictions.keys()
+        #     )
+        # ):
+        #     continue
         actual_context = int(v_data["context_label"])
         language_context = 0 if float(v_data["bert_base_score"]) >= textual_sim_threshold else 1
         start = time.time()
